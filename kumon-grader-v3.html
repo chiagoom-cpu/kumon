@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>採点アシスタント</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1200;
+  --ink2: #3d3420;
+  --paper: #faf8f2;
+  --paper2: #f2ece0;
+  --paper3: #e8e0cc;
+  --red: #b5271e;
+  --red-bg: #fff2f1;
+  --green: #1a5c38;
+  --green-bg: #edf7f0;
+  --amber: #92650a;
+  --amber-bg: #fdf5e0;
+  --border: #d5c9a8;
+  --muted: #8a7a5a;
+  --accent: #b8860b;
+  --accent-light: #f5ead0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);min-height:100dvh;overflow-x:hidden}
+
+/* HEADER */
+.hd{background:var(--ink);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.35)}
+.hd-top{display:flex;align-items:center;padding:14px 16px 12px}
+.hd-title{font-family:'Noto Serif JP',serif;font-size:1.1rem;color:#f0eada;font-weight:700;letter-spacing:.06em}
+.hd-title small{display:block;font-family:'Noto Sans JP',sans-serif;font-size:.65rem;font-weight:300;color:#c9a84c;letter-spacing:.18em;margin-bottom:3px}
+.nav{display:flex;border-top:1px solid rgba(255,255,255,.07)}
+.nt{flex:1;padding:10px 4px;text-align:center;font-size:.66rem;color:rgba(240,234,218,.45);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;letter-spacing:.04em}
+.nt.on{color:#c9a84c;border-bottom-color:#c9a84c;background:rgba(201,168,76,.08)}
+.nt i{font-size:1rem;display:block;margin-bottom:2px;font-style:normal}
+
+/* PAGES */
+.pg{display:none}.pg.on{display:block}
+.pc{padding:16px}
+
+/* STEP BAR */
+.sb{display:flex;background:var(--paper2);border-bottom:1px solid var(--border)}
+.si{flex:1;padding:9px 4px;text-align:center;font-size:.6rem;color:var(--muted);letter-spacing:.04em;position:relative;transition:all .2s}
+.si.on{color:var(--ink);font-weight:700}
+.si.on::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:var(--accent);border-radius:1px}
+.si.done{color:var(--green)}
+.sc{width:20px;height:20px;border-radius:50%;background:var(--border);color:var(--muted);font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;transition:all .2s}
+.si.on .sc{background:var(--ink);color:#faf8f2}
+.si.done .sc{background:var(--green);color:#fff}
+
+.gs{display:none}.gs.on{display:block}
+
+/* CARDS / PICKERS */
+.sec-lbl{font-size:.7rem;font-weight:700;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.picker-box{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.pb-head{padding:10px 16px;background:var(--paper2);font-size:.7rem;font-weight:700;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.pi{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.pi:last-child{border-bottom:none}
+.pi:active,.pi.sel{background:var(--amber-bg)}
+.rd{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.pi.sel .rd{border-color:var(--accent);background:var(--accent)}
+.pi.sel .rd::after{content:'';width:6px;height:6px;background:#fff;border-radius:50%;display:block}
+.pi-code{font-size:.68rem;color:var(--accent);font-weight:700;letter-spacing:.08em;margin-bottom:2px}
+.pi-name{font-size:.88rem;font-weight:500}
+.pi-meta{font-size:.65rem;color:var(--muted);margin-top:2px}
+
+.or-div{text-align:center;font-size:.72rem;color:var(--muted);margin:14px 0;position:relative}
+.or-div::before,.or-div::after{content:'';position:absolute;top:50%;width:37%;height:1px;background:var(--border)}
+.or-div::before{left:0}.or-div::after{right:0}
+
+/* UPLOAD ZONE */
+.uz{border:2px dashed var(--border);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;position:relative;background:#fff;transition:all .2s}
+.uz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz.ok{border-color:var(--accent);background:var(--accent-light)}
+.uz-ic{font-size:1.8rem;margin-bottom:7px}
+.uz-tx{font-size:.85rem;font-weight:500}
+.uz-sub{font-size:.7rem;color:var(--muted);margin-top:3px}
+.thumb{width:100%;max-height:150px;object-fit:contain;border-radius:8px;margin-top:10px;border:1px solid var(--border)}
+
+/* FORM */
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;text-transform:uppercase}
+.fi{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-family:'Noto Sans JP',sans-serif;font-size:.95rem;background:#fff;color:var(--ink);transition:border-color .15s}
+.fi:focus{outline:none;border-color:var(--accent)}
+
+/* BUTTONS */
+.btn{width:100%;padding:14px;border-radius:10px;border:none;font-family:'Noto Sans JP',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:all .15s}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--ink);color:#faf8f2}
+.btn-p:disabled{background:#aaa;cursor:not-allowed;transform:none}
+.btn-g{background:transparent;color:var(--ink);border:1.5px solid var(--border);margin-top:10px}
+.btn-sm{border:none;border-radius:6px;padding:5px 10px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:500}
+.btn-del{background:var(--red-bg);color:var(--red)}
+.btn-ic{background:var(--ink);color:#faf8f2;border:none;border-radius:8px;padding:8px 14px;font-size:.78rem;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:500;letter-spacing:.04em}
+
+/* LIBRARY CARDS */
+.ac{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(26,18,0,.07);position:relative;overflow:hidden}
+.ac::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);border-radius:4px 0 0 4px}
+.ac-ic{width:40px;height:40px;background:var(--accent-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.ac-info{flex:1;min-width:0}
+.ac-code{font-size:.7rem;color:var(--accent);font-weight:700;letter-spacing:.1em;margin-bottom:2px}
+.ac-title{font-size:.9rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-meta{font-size:.65rem;color:var(--muted);margin-top:2px}
+
+/* MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(26,18,0,.6);z-index:200;backdrop-filter:blur(4px);align-items:flex-end}
+.ov.on{display:flex}
+.modal{background:var(--paper);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-height:88dvh;overflow-y:auto}
+.mh{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.mt{font-family:'Noto Serif JP',serif;font-size:1.05rem;font-weight:700;margin-bottom:18px;letter-spacing:.05em}
+
+/* RESULT */
+.ro{border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(26,18,0,.12);margin-bottom:16px}
+.rt{padding:26px 20px 18px;text-align:center}
+.rt.c{background:var(--green-bg)}.rt.x{background:var(--red-bg)}.rt.d{background:var(--amber-bg)}
+.re{font-size:3.2rem;line-height:1;margin-bottom:8px;display:block}
+.rv{font-family:'Noto Serif JP',serif;font-size:1.7rem;font-weight:700}
+.rt.c .rv{color:var(--green)}.rt.x .rv{color:var(--red)}.rt.d .rv{color:var(--amber)}
+.rb{background:#fff;border:1px solid var(--border);border-top:none;border-radius:0 0 16px 16px}
+.rr{padding:13px 16px;border-bottom:1px solid var(--paper2)}
+.rr:last-child{border-bottom:none}
+.rl{font-size:.63rem;font-weight:700;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.rx{font-size:.9rem;line-height:1.85}
+.rr.adv{background:#fffbf0}
+.rr.ded{background:#fff2f1}
+
+/* LOADING */
+.lw{text-align:center;padding:60px 20px}
+.sp{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-size:.82rem;color:var(--muted);letter-spacing:.08em}
+
+.err{background:var(--red-bg);border:1px solid #fca5a5;border-radius:8px;padding:11px 14px;font-size:.82rem;color:var(--red);margin-top:12px;line-height:1.6}
+
+/* AI ANALYZE */
+.ai-btn{width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-light);color:var(--accent);font-family:'Noto Sans JP',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.ai-btn:active{transform:scale(.98)}
+.ai-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.ai-result-box{background:var(--green-bg);border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;font-size:.82rem;line-height:1.7;color:var(--green);margin-top:10px}
+.ai-result-box strong{font-weight:700}
+.ai-spin{width:16px;height:16px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+/* INFO BOX */
+.info-box{background:var(--accent-light);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;font-size:.8rem;line-height:1.85;color:var(--ink2)}
+.info-box strong{color:var(--accent);font-weight:700}
+.info-step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
+.info-step:last-child{margin-bottom:0}
+.info-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty i{font-size:2.6rem;display:block;margin-bottom:12px;font-style:normal}
+.empty p{font-size:.85rem;line-height:1.85}
+
+/* SYNC badge */
+.sync-badge{display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);border:1px solid #86efac;border-radius:999px;padding:3px 10px;font-size:.68rem;color:var(--green);font-weight:700;margin-bottom:14px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-top">
+    <div class="hd-title">
+      <small>KUMON ASSISTANT</small>
+      採点アシスタント
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nt on" data-p="grade" onclick="sw('grade')"><i>✏️</i>採点する</div>
+    <div class="nt" data-p="lib" onclick="sw('lib')"><i>📚</i>解答書ライブラリ</div>
+    <div class="nt" data-p="help" onclick="sw('help')"><i>❓</i>使い方</div>
+  </div>
+</div>
+
+<!-- GRADE PAGE -->
+<div class="pg on" id="pg-grade">
+  <div class="sb">
+    <div class="si on" id="gst1"><div class="sc">1</div>解答書</div>
+    <div class="si" id="gst2"><div class="sc">2</div>生徒の回答</div>
+    <div class="si" id="gst3"><div class="sc">3</div>採点結果</div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="gs on" id="gs1">
+    <div class="pc">
+      <div id="syncStatus"></div>
+      <div class="sec-lbl">ライブラリから選択</div>
+      <div id="pickerList"></div>
+      <div class="or-div">または</div>
+      <div class="sec-lbl">その場でアップロード</div>
+      <div class="uz" id="tmpZone">
+        <input type="file" id="tmpFile" accept="image/*,application/pdf" capture="environment">
+        <div class="uz-ic">📷</div>
+        <div class="uz-tx">解答書を撮影・選択</div>
+        <div class="uz-sub">ライブラリには保存されません</div>
+      </div>
+      <img class="thumb" id="tmpPrev" style="display:none">
+      <div class="mt16">
+        <div class="sec-lbl">問題番号・設問（任意）</div>
+        <input class="fi" id="qInfo" placeholder="例：大問3の問2">
+      </div>
+      <div class="mt20">
+        <button class="btn btn-p" id="toS2" disabled>次へ：生徒の回答を入力 →</button>
+      </div>
+      <div class="err" id="e1" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="gs" id="gs2">
+    <div class="pc">
+      <div class="sec-lbl">生徒の回答用紙</div>
+      <div class="uz" id="stuZone">
+        <input type="file" id="stuFile" accept="image/*" capture="environment">
+        <div class="uz-ic">📝</div>
+        <div class="uz-tx">回答用紙を撮影・選択</div>
+        <div class="uz-sub">カメラで直接撮影できます</div>
+      </div>
+      <img class="thumb" id="stuPrev" style="display:none">
+      <div class="mt16">
+        <div class="sec-lbl">またはテキストで入力</div>
+        <textarea class="fi" id="stuTxt" placeholder="生徒の回答をここに入力&#10;（画像と併用可）" style="min-height:90px;resize:vertical;line-height:1.8"></textarea>
+      </div>
+      <div class="mt20">
+        <button class="btn btn-p" id="gradeBtn">採点する ✦</button>
+        <button class="btn btn-g" id="bkBtn">← 戻る</button>
+      </div>
+      <div class="err" id="e2" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="gs" id="gs3">
+    <div class="pc">
+      <div class="lw" id="lv"><div class="sp"></div><div class="lt">AIが採点中です…</div></div>
+      <div id="rv" style="display:none">
+        <div id="rc"></div>
+        <button class="btn btn-p" id="nxtBtn">次の問題を採点する</button>
+        <button class="btn btn-g mt8" id="rstBtn">最初からやり直す</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LIBRARY PAGE -->
+<div class="pg" id="pg-lib">
+  <div class="pc">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-family:'Noto Serif JP',serif;font-size:1rem;font-weight:700;letter-spacing:.06em">解答書ライブラリ</div>
+      <button class="btn-ic" onclick="openMod()">＋ 追加</button>
+    </div>
+    <div class="sync-badge"><span class="sync-dot"></span>スタッフ間で自動同期</div>
+    <div id="libList"></div>
+  </div>
+</div>
+
+<!-- HELP PAGE -->
+<div class="pg" id="pg-help">
+  <div class="pc">
+    <div style="font-family:'Noto Serif JP',serif;font-size:1rem;font-weight:700;letter-spacing:.06em;margin-bottom:16px">使い方ガイド</div>
+
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">📚 解答書の事前登録</div>
+    <div class="info-box" style="margin-bottom:16px">
+      <div class="info-step"><div class="info-num">1</div><div>OneDriveで解答書ファイルを開く</div></div>
+      <div class="info-step"><div class="info-num">2</div><div>「共有」→「リンクのコピー」をタップ<br><span style="color:var(--muted);font-size:.75rem">※「リンクを知っている全員」に設定</span></div></div>
+      <div class="info-step"><div class="info-num">3</div><div>「解答書ライブラリ」タブの「＋ 追加」でURLを貼り付け</div></div>
+      <div class="info-step"><div class="info-num">4</div><div>登録後はスタッフ全員の端末で自動的に使えるようになります ✅</div></div>
+    </div>
+
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">✏️ 採点の流れ</div>
+    <div class="info-box" style="margin-bottom:16px">
+      <div class="info-step"><div class="info-num">1</div><div>解答書をライブラリから選ぶ（またはその場で撮影）</div></div>
+      <div class="info-step"><div class="info-num">2</div><div>生徒の回答用紙を撮影またはテキスト入力</div></div>
+      <div class="info-step"><div class="info-num">3</div><div>「採点する」→ ⭕❌△ と理由・アドバイスが表示</div></div>
+      <div class="info-step"><div class="info-num">4</div><div>「次の問題」で同じ解答書のまま次の生徒へ</div></div>
+    </div>
+
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">💡 OneDrive共有リンクの注意点</div>
+    <div class="info-box">
+      <div class="info-step"><div class="info-num">!</div><div>共有設定は<strong>「リンクを知っている全員が表示可能」</strong>に設定してください</div></div>
+      <div class="info-step"><div class="info-num">!</div><div>解答書を更新した場合、OneDrive上のファイルを更新するだけでOK（URLは変わりません）</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="ov" id="addMod" onclick="modClick(event)">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mt">解答書を登録</div>
+    <div class="fg">
+      <label class="fl">教材番号</label>
+      <input class="fi" id="nCode" placeholder="例：GII-100、国語5年A" maxlength="30">
+    </div>
+    <div class="fg">
+      <label class="fl">タイトル・メモ</label>
+      <input class="fi" id="nTitle" placeholder="例：漢字の読み書き、読解問題" maxlength="50">
+    </div>
+    <div class="fg">
+      <label class="fl">解答書ファイル（AIが自動判定）</label>
+      <div class="uz" id="nFileZone">
+        <input type="file" id="nFile" accept="image/*,application/pdf" capture="environment">
+        <div class="uz-ic" id="nFileIc">📂</div>
+        <div class="uz-tx" id="nFileTx">ファイルを選択または撮影</div>
+        <div class="uz-sub">JPG / PNG / PDF</div>
+      </div>
+      <img class="thumb" id="nFilePrev" style="display:none">
+    </div>
+    <div class="fg">
+      <label class="fl">または OneDrive 共有リンク</label>
+      <input class="fi" id="nUrl" placeholder="https://1drv.ms/…" type="url">
+      <div style="font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.6">OneDriveで「共有」→「リンクのコピー」で取得できます</div>
+    </div>
+
+    <button class="ai-btn" id="aiAnalyzeBtn" disabled>
+      <span id="aiAnalyzeBtnInner">✨ AIに教材番号・タイトルを自動入力させる</span>
+    </button>
+    <div id="aiResultBox" style="display:none"></div>
+
+    <div class="fg" style="margin-top:16px">
+      <label class="fl">教材番号</label>
+      <input class="fi" id="nCode" placeholder="例：GII-100（AIが自動入力します）" maxlength="30">
+    </div>
+    <div class="fg">
+      <label class="fl">タイトル・メモ</label>
+      <input class="fi" id="nTitle" placeholder="例：読解問題（AIが自動入力します）" maxlength="50">
+    </div>
+    <button class="btn btn-p" id="saveBtn" disabled>登録してスタッフと共有する</button>
+    <button class="btn btn-g" onclick="closeMod()">キャンセル</button>
+  </div>
+</div>
+
+<script>
+// ── STORAGE (shared across devices via window.storage) ──
+const SKEY = 'kumon-answer-books-v1';
+
+async function loadBooks() {
+  try {
+    const r = await window.storage.get(SKEY, true);
+    return r ? JSON.parse(r.value) : [];
+  } catch { return []; }
+}
+async function saveBooks(books) {
+  try { await window.storage.set(SKEY, JSON.stringify(books), true); } catch(e) { alert('保存に失敗しました: '+e.message); }
+}
+
+// ── STATE ──
+let books = [];
+let selId = null;
+let tmpB64 = null, tmpMime = null;
+let stuB64 = null;
+
+// ── INIT ──
+(async () => {
+  books = await loadBooks();
+  renderPicker();
+  updateSyncBadge();
+})();
+
+function updateSyncBadge() {
+  const el = document.getElementById('syncStatus');
+  if (books.length > 0) {
+    el.innerHTML = '<div class="sync-badge"><span class="sync-dot"></span>ライブラリ読み込み完了</div>';
+  }
+}
+
+// ── PAGE SWITCH ──
+function sw(p) {
+  document.querySelectorAll('.pg').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.nt').forEach(e=>e.classList.remove('on'));
+  document.getElementById('pg-'+p).classList.add('on');
+  document.querySelector('[data-p="'+p+'"]').classList.add('on');
+  if (p==='lib') renderLib();
+  if (p==='grade') renderPicker();
+}
+
+// ── LIBRARY RENDER ──
+function renderLib() {
+  const el = document.getElementById('libList');
+  if (!books.length) {
+    el.innerHTML = '<div class="empty"><i>📂</i><p>解答書がまだ登録されていません。<br>「＋ 追加」ボタンから登録してください。</p></div>';
+    return;
+  }
+  el.innerHTML = books.map(b=>`
+    <div class="ac">
+      <div class="ac-ic">📋</div>
+      <div class="ac-info">
+        <div class="ac-code">${esc(b.code)}</div>
+        <div class="ac-title">${esc(b.title)}</div>
+        <div class="ac-meta">OneDriveリンク · ${b.date}</div>
+      </div>
+      <button class="btn-sm btn-del" onclick="delBook('${b.id}')">削除</button>
+    </div>`).join('');
+}
+
+// ── PICKER RENDER ──
+function renderPicker() {
+  const el = document.getElementById('pickerList');
+  if (!books.length) {
+    el.innerHTML = '<div style="font-size:.8rem;color:var(--muted);text-align:center;padding:14px;background:var(--paper2);border-radius:10px;line-height:1.7">ライブラリに解答書がありません。<br>「解答書ライブラリ」タブから先に登録できます。</div>';
+    chk1(); return;
+  }
+  el.innerHTML = `<div class="picker-box">
+    <div class="pb-head"><span>登録済み解答書</span><span style="font-size:.65rem;font-weight:400">${books.length}件</span></div>
+    ${books.map(b=>`<div class="pi ${selId===b.id?'sel':''}" onclick="pick('${b.id}')">
+      <div class="rd"></div>
+      <div><div class="pi-code">${esc(b.code)}</div><div class="pi-name">${esc(b.title)}</div></div>
+    </div>`).join('')}
+  </div>`;
+  chk1();
+}
+
+function pick(id) {
+  selId = (selId===id) ? null : id;
+  if (selId) { tmpB64=null; tmpMime=null; document.getElementById('tmpPrev').style.display='none'; document.getElementById('tmpZone').classList.remove('ok'); }
+  renderPicker();
+}
+function chk1() { document.getElementById('toS2').disabled = !(selId || tmpB64); }
+
+// ── TEMP UPLOAD ──
+document.getElementById('tmpFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  tmpMime=f.type; tmpB64=await b64(f);
+  if(f.type.startsWith('image/')){const p=document.getElementById('tmpPrev');p.src='data:'+f.type+';base64,'+tmpB64;p.style.display='block';}
+  selId=null; document.getElementById('tmpZone').classList.add('ok');
+  renderPicker();
+});
+
+// ── GRADE STEPS ──
+function gStep(n) {
+  for(let i=1;i<=3;i++){
+    document.getElementById('gst'+i).className='si'+(i<n?' done':i===n?' on':'');
+    document.getElementById('gs'+i).className='gs'+(i===n?' on':'');
+  }
+}
+document.getElementById('toS2').addEventListener('click',()=>gStep(2));
+document.getElementById('bkBtn').addEventListener('click',()=>gStep(1));
+
+// ── STUDENT UPLOAD ──
+document.getElementById('stuFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  stuB64=await b64(f);
+  const p=document.getElementById('stuPrev'); p.src='data:'+f.type+';base64,'+stuB64; p.style.display='block';
+  document.getElementById('stuZone').classList.add('ok');
+});
+
+// ── GRADE ──
+document.getElementById('gradeBtn').addEventListener('click', async ()=>{
+  const txt=document.getElementById('stuTxt').value.trim();
+  if(!stuB64&&!txt){showErr('e2','生徒の回答（画像またはテキスト）を入力してください。');return;}
+  document.getElementById('e2').style.display='none';
+  gStep(3);
+  document.getElementById('lv').style.display='block';
+  document.getElementById('rv').style.display='none';
+
+  // Get answer source
+  let ansUrl=null, ansB64=tmpB64, ansMime=tmpMime;
+  if(selId){ const bk=books.find(x=>x.id===selId); if(bk){ ansUrl=bk.url||null; if(bk.data){ansB64=bk.data;ansMime=bk.mime;ansUrl=null;} } }
+
+  const qInfo=document.getElementById('qInfo').value.trim();
+
+  try {
+    const content=[];
+
+    // If OneDrive URL, fetch the file via proxy approach - pass URL as text for AI to know context
+    // Otherwise use base64 image
+    if(ansUrl){
+      // Convert OneDrive share URL to direct download URL
+      const directUrl = convertOneDriveUrl(ansUrl);
+      content.push({type:'text',text:'解答書はこちらのURLにあります（OneDrive）: '+directUrl+'\n以下の指示に従って採点してください。解答書のURLにアクセスして内容を確認してください。'});
+      // Also add web_search tool to fetch the URL
+    } else if(ansB64){
+      if(ansMime==='application/pdf') content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:ansB64}});
+      else content.push({type:'image',source:{type:'base64',media_type:ansMime,data:ansB64}});
+    }
+
+    if(stuB64) content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:stuB64}});
+
+    let p=`あなたは公文式教室の国語採点アシスタントです。
+以下の【採点基準】に従って採点してください。
+
+【採点基準】
+(1) 誤りのあった場合は、各設問ごとに所定の点引きを行う。丸数字（①②③……）ごとに点引き。
+(2) 誤字・脱字は一点引き。
+(3) 読解問題の解答は一解答例。表現の異同を問わず、要点がとらえられていれば正解とする。ただし文型が指定してある場合はそれに即した解答を正解とする。現代語訳も同意であれば正解。語句の解答における句点の有無は問わない。
+(4) ——線を付した語句は、その直後の（　）内の語句と交換可能であることを示す。
+(5) 直前に——線を付した語句のない（　）内の語句は解答の許容範囲であり、その有無は問わない。（別）は別解、※マークは採点上の留意点を表す。
+(6) 解答文の送りがなは本文中以外の一般的なものを用いてよい（設問文に指示がある場合はそれに従う）。
+
+`;
+    if(ansUrl) p+='最初のURLが解答書のOneDriveリンクです。URLの内容を参照して採点してください。\n';
+    else if(ansB64) p+='最初の画像/ドキュメントが解答書です。\n';
+    if(stuB64) p+='生徒の回答用紙の画像が添付されています。\n';
+    if(qInfo) p+='対象の設問：'+qInfo+'\n';
+    if(txt) p+='生徒の回答テキスト：「'+txt+'」\n';
+    p+='\n以下のJSONのみ返してください（マークダウン不要）：\n{"verdict":"correct|incorrect|partial","correct_answer":"正解（解答書の記載通り）","student_answer_read":"生徒の回答","explanation":"採点根拠（採点基準のどの項目を適用したか含めて2〜3文）","advice":"生徒へのアドバイス1文またはnull","deduction":"点引きの内容（誤字・脱字等があれば記載、なければnull）"}';
+    content.push({type:'text',text:p});
+
+    const tools = ansUrl ? [{type:'web_search_20250305',name:'web_search'}] : undefined;
+    const body = {model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content}]};
+    if(tools) body.tools=tools;
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    const raw=data.content.map(x=>x.text||'').join('').replace(/```json|```/g,'').trim();
+    renderResult(JSON.parse(raw));
+  } catch(e){
+    document.getElementById('rc').innerHTML='<div class="err">エラーが発生しました。もう一度お試しください。<br><small>'+e.message+'</small></div>';
+    document.getElementById('lv').style.display='none';
+    document.getElementById('rv').style.display='block';
+  }
+});
+
+function convertOneDriveUrl(url) {
+  // Convert OneDrive share URLs to direct download links where possible
+  if (url.includes('1drv.ms') || url.includes('onedrive.live.com')) {
+    return url; // Return as-is; Claude will try to access via web search
+  }
+  return url;
+}
+
+function renderResult(r){
+  const cls=r.verdict==='correct'?'c':r.verdict==='incorrect'?'x':'d';
+  const emoji=cls==='c'?'⭕':cls==='x'?'❌':'△';
+  const lbl=cls==='c'?'正解':cls==='x'?'不正解':'部分点';
+  let h=`<div class="ro"><div class="rt ${cls}"><span class="re">${emoji}</span><div class="rv">${lbl}</div></div><div class="rb">`;
+  if(r.student_answer_read) h+=row('生徒の回答',r.student_answer_read,'');
+  if(r.correct_answer) h+=row('正解',r.correct_answer,'');
+  if(r.explanation) h+=row('採点コメント',r.explanation,'');
+  if(r.deduction) h+=row('点引き',r.deduction,'ded');
+  if(r.advice) h+=row('アドバイス',r.advice,'adv');
+  h+='</div></div>';
+  document.getElementById('rc').innerHTML=h;
+  document.getElementById('lv').style.display='none';
+  document.getElementById('rv').style.display='block';
+}
+function row(l,t,c){return`<div class="rr ${c}"><div class="rl">${l}</div><div class="rx">${esc(t)}</div></div>`;}
+
+document.getElementById('nxtBtn').addEventListener('click',()=>{
+  stuB64=null;
+  document.getElementById('stuFile').value='';
+  document.getElementById('stuPrev').style.display='none';
+  document.getElementById('stuTxt').value='';
+  document.getElementById('stuZone').classList.remove('ok');
+  gStep(2);
+});
+document.getElementById('rstBtn').addEventListener('click',()=>{
+  selId=null; tmpB64=null; tmpMime=null; stuB64=null;
+  ['tmpFile','stuFile'].forEach(id=>document.getElementById(id).value='');
+  ['tmpPrev','stuPrev'].forEach(id=>document.getElementById(id).style.display='none');
+  ['tmpZone','stuZone'].forEach(id=>document.getElementById(id).classList.remove('ok'));
+  document.getElementById('stuTxt').value='';
+  document.getElementById('qInfo').value='';
+  renderPicker();
+  gStep(1);
+});
+
+// ── MODAL ──
+let nFileB64 = null, nFileMime = null;
+
+function openMod(){
+  nFileB64=null; nFileMime=null;
+  ['nCode','nTitle','nUrl'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nFile').value='';
+  document.getElementById('nFilePrev').style.display='none';
+  document.getElementById('nFileZone').classList.remove('ok');
+  document.getElementById('nFileIc').textContent='📂';
+  document.getElementById('nFileTx').textContent='ファイルを選択または撮影';
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('aiAnalyzeBtn').disabled=true;
+  document.getElementById('aiResultBox').style.display='none';
+  document.getElementById('addMod').classList.add('on');
+}
+function closeMod(){document.getElementById('addMod').classList.remove('on');}
+function modClick(e){if(e.target===document.getElementById('addMod'))closeMod();}
+
+// File upload in modal
+document.getElementById('nFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  nFileMime=f.type; nFileB64=await b64(f);
+  if(f.type.startsWith('image/')){const p=document.getElementById('nFilePrev');p.src='data:'+f.type+';base64,'+nFileB64;p.style.display='block';}
+  document.getElementById('nFileZone').classList.add('ok');
+  document.getElementById('nFileIc').textContent='✅';
+  document.getElementById('nFileTx').textContent=f.name;
+  document.getElementById('aiAnalyzeBtn').disabled=false;
+  chkSave();
+});
+
+// Enable AI button when URL typed
+document.getElementById('nUrl').addEventListener('input', ()=>{
+  const hasUrl = document.getElementById('nUrl').value.trim().length > 0;
+  if (!nFileB64) document.getElementById('aiAnalyzeBtn').disabled = !hasUrl;
+  chkSave();
+});
+
+['nCode','nTitle'].forEach(id=>document.getElementById(id).addEventListener('input',chkSave));
+
+function chkSave(){
+  const hasSource = nFileB64 || document.getElementById('nUrl').value.trim();
+  const ok = hasSource && document.getElementById('nCode').value.trim() && document.getElementById('nTitle').value.trim();
+  document.getElementById('saveBtn').disabled=!ok;
+}
+
+// ── AI AUTO ANALYZE ──
+document.getElementById('aiAnalyzeBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('aiAnalyzeBtn');
+  const inner = document.getElementById('aiAnalyzeBtnInner');
+  const box = document.getElementById('aiResultBox');
+  btn.disabled=true;
+  inner.innerHTML='<span class="ai-spin"></span> 解析中…';
+  box.style.display='none';
+
+  try {
+    const content=[];
+
+    if(nFileB64){
+      if(nFileMime==='application/pdf') content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:nFileB64}});
+      else content.push({type:'image',source:{type:'base64',media_type:nFileMime,data:nFileB64}});
+    }
+
+    const url=document.getElementById('nUrl').value.trim();
+    let prompt='この画像/ドキュメントは公文式の解答書です。\n';
+    if(url && !nFileB64) prompt+='OneDriveリンク: '+url+'\nこのファイルにアクセスして中身を確認してください。\n';
+    prompt+=`ファイルの内容を見て、以下のJSONのみ返してください（マークダウン不要）：
+{"code":"教材番号（例：国語GII-100）","title":"内容を表す簡潔なタイトル（例：漢字・語彙 読解問題）"}
+教材番号やタイトルが読み取れない場合は推測で構いません。`;
+    content.push({type:'text',text:prompt});
+
+    const tools = (!nFileB64 && url) ? [{type:'web_search_20250305',name:'web_search'}] : undefined;
+    const body={model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content}]};
+    if(tools) body.tools=tools;
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    const raw=data.content.map(x=>x.text||'').join('').replace(/```json|```/g,'').trim();
+    const result=JSON.parse(raw);
+
+    // Fill fields
+    if(result.code) document.getElementById('nCode').value=result.code;
+    if(result.title) document.getElementById('nTitle').value=result.title;
+
+    box.innerHTML=`<div class="ai-result-box">✨ AIが自動入力しました。必要に応じて修正してください。</div>`;
+    box.style.display='block';
+    chkSave();
+  } catch(e){
+    box.innerHTML=`<div class="err">解析に失敗しました。手動で入力してください。<br><small>${e.message}</small></div>`;
+    box.style.display='block';
+  } finally {
+    inner.innerHTML='✨ AIに教材番号・タイトルを自動入力させる';
+    btn.disabled=false;
+  }
+});
+
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const bk={
+    id:Date.now().toString(),
+    code:document.getElementById('nCode').value.trim(),
+    title:document.getElementById('nTitle').value.trim(),
+    url:document.getElementById('nUrl').value.trim()||null,
+    data: nFileB64||null,
+    mime: nFileMime||null,
+    date:new Date().toLocaleDateString('ja-JP')
+  };
+  books.push(bk);
+  await saveBooks(books);
+  closeMod();
+  renderLib();
+  renderPicker();
+  updateSyncBadge();
+});
+
+async function delBook(id){
+  if(!confirm('この解答書を削除しますか？'))return;
+  books=books.filter(b=>b.id!==id);
+  if(selId===id)selId=null;
+  await saveBooks(books);
+  renderLib(); renderPicker();
+}
+
+// ── UTILS ──
+function b64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+</script>
+</body>
+</html>
