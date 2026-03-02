@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>採点アシスタント</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1200;
+  --paper:#faf8f2;
+  --paper2:#f0ebe0;
+  --border:#d5c9a8;
+  --muted:#8a7a5a;
+  --accent:#b8860b;
+  --accent-light:#f5ead0;
+  --red:#b5271e;
+  --red-bg:#fff2f1;
+  --green:#1a5c38;
+  --green-bg:#edf7f0;
+  --amber:#92650a;
+  --amber-bg:#fdf5e0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);min-height:100dvh}
+
+.hd{background:var(--ink);padding:16px;text-align:center;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.hd-title{font-family:'Noto Serif JP',serif;font-size:1.15rem;color:#f0eada;font-weight:700;letter-spacing:.06em}
+.hd-sub{font-size:.65rem;color:#c9a84c;letter-spacing:.18em;margin-bottom:3px}
+
+.pc{padding:20px 16px}
+
+/* STEPS */
+.steps{display:flex;margin-bottom:24px;background:var(--paper2);border-radius:12px;padding:4px;gap:2px}
+.step{flex:1;padding:8px 4px;text-align:center;font-size:.62rem;color:var(--muted);border-radius:8px;transition:all .2s;letter-spacing:.03em}
+.step.on{background:var(--ink);color:#faf8f2;font-weight:700}
+.step.done{color:var(--green)}
+.step-n{font-size:.85rem;font-weight:700;display:block;margin-bottom:2px}
+
+.screen{display:none}.screen.on{display:block}
+
+/* UPLOAD */
+.ul-label{font-size:.78rem;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.ul-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.uz{border:2px dashed var(--border);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer;position:relative;background:#fff;transition:all .2s;margin-bottom:16px}
+.uz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz.ok{border-color:var(--accent);background:var(--accent-light)}
+.uz-ic{font-size:2.2rem;margin-bottom:8px}
+.uz-tx{font-size:.9rem;font-weight:700}
+.uz-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.thumb{width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1px solid var(--border);margin-bottom:16px}
+
+/* TEXTAREA */
+textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-family:'Noto Sans JP',sans-serif;font-size:.95rem;background:#fff;color:var(--ink);line-height:1.8;resize:vertical;min-height:100px;margin-bottom:16px}
+textarea:focus{outline:none;border-color:var(--accent)}
+
+/* BUTTONS */
+.btn{width:100%;padding:15px;border-radius:12px;border:none;font-family:'Noto Sans JP',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:all .15s;margin-bottom:10px}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--ink);color:#faf8f2}
+.btn-p:disabled{background:#bbb;cursor:not-allowed;transform:none}
+.btn-g{background:transparent;color:var(--ink);border:1.5px solid var(--border)}
+
+/* LOADING */
+.lw{text-align:center;padding:60px 20px}
+.sp{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-size:.85rem;color:var(--muted);letter-spacing:.06em}
+.lt2{font-size:.75rem;color:var(--muted);margin-top:8px;opacity:.7}
+
+/* RESULT */
+.result-wrap{animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}}
+
+.score-banner{border-radius:16px;padding:24px 20px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
+.score-banner.great{background:linear-gradient(135deg,#e8f5ee,#d4eddf)}
+.score-banner.good{background:linear-gradient(135deg,#fff8e8,#fdf0c8)}
+.score-banner.try{background:linear-gradient(135deg,#fff0ef,#ffe4e3)}
+.score-num{font-family:'Noto Serif JP',serif;font-size:3rem;font-weight:700;line-height:1}
+.score-banner.great .score-num{color:var(--green)}
+.score-banner.good .score-num{color:var(--amber)}
+.score-banner.try .score-num{color:var(--red)}
+.score-label{font-size:.78rem;color:var(--muted);margin-top:4px;letter-spacing:.06em}
+.score-mark{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:3.5rem;opacity:.15}
+
+.section-card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.section-head{padding:12px 16px;background:var(--paper2);font-family:'Noto Serif JP',serif;font-size:.9rem;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.section-body{padding:14px 16px;font-size:.88rem;line-height:1.9;color:#2a2010;white-space:pre-wrap;word-break:break-all}
+
+.q-item{padding:12px 16px;border-bottom:1px solid var(--paper2);display:flex;gap:10px;align-items:flex-start}
+.q-item:last-child{border-bottom:none}
+.q-mark{font-size:1.1rem;flex-shrink:0;margin-top:2px}
+.q-content{flex:1}
+.q-num{font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:3px}
+.q-verdict{font-size:.85rem;font-weight:700;margin-bottom:4px}
+.q-verdict.c{color:var(--green)}.q-verdict.x{color:var(--red)}.q-verdict.d{color:var(--amber)}
+.q-comment{font-size:.82rem;line-height:1.75;color:#3a3020}
+
+.advice-card{background:linear-gradient(135deg,var(--accent-light),#fffbf0);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.advice-head{font-size:.75rem;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.advice-body{font-size:.85rem;line-height:1.9;color:var(--ink)}
+
+.err{background:var(--red-bg);border:1px solid #fca5a5;border-radius:10px;padding:13px 16px;font-size:.83rem;color:var(--red);margin-bottom:12px;line-height:1.6}
+
+.note{font-size:.75rem;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-sub">KUMON ASSISTANT</div>
+  <div class="hd-title">採点アシスタント</div>
+</div>
+
+<div class="pc">
+  <div class="steps">
+    <div class="step on" id="st1"><span class="step-n">①</span>解答書</div>
+    <div class="step" id="st2"><span class="step-n">②</span>生徒の回答</div>
+    <div class="step" id="st3"><span class="step-n">③</span>採点結果</div>
+  </div>
+
+  <!-- SCREEN 1 -->
+  <div class="screen on" id="sc1">
+    <div class="ul-label">解答書の写真</div>
+    <div class="uz" id="ansZone">
+      <input type="file" id="ansFile" accept="image/*,application/pdf" capture="environment">
+      <div class="uz-ic">📋</div>
+      <div class="uz-tx">解答書を撮影・選択</div>
+      <div class="uz-sub">カメラで直接撮影できます</div>
+    </div>
+    <img class="thumb" id="ansPrev" style="display:none">
+
+    <div class="ul-label" style="margin-top:4px">問題番号・設問（任意）</div>
+    <textarea id="qInfo" placeholder="例：O151〜156の問題&#10;（空欄のままでも採点できます）" style="min-height:70px"></textarea>
+
+    <button class="btn btn-p" id="toSc2" disabled>次へ：生徒の回答を入力 →</button>
+    <div class="err" id="e1" style="display:none"></div>
+  </div>
+
+  <!-- SCREEN 2 -->
+  <div class="screen" id="sc2">
+    <div class="ul-label">生徒の回答用紙の写真</div>
+    <div class="uz" id="stuZone">
+      <input type="file" id="stuFile" accept="image/*" capture="environment">
+      <div class="uz-ic">📝</div>
+      <div class="uz-tx">回答用紙を撮影・選択</div>
+      <div class="uz-sub">カメラで直接撮影できます</div>
+    </div>
+    <img class="thumb" id="stuPrev" style="display:none">
+
+    <div class="ul-label">またはテキストで回答を入力</div>
+    <textarea id="stuTxt" placeholder="生徒の回答をここに入力&#10;（画像と併用も可）"></textarea>
+
+    <div class="note">※解答書と回答用紙の両方があるとより精度が上がります</div>
+
+    <button class="btn btn-p" id="gradeBtn">✦ 採点する</button>
+    <button class="btn btn-g" id="backBtn">← 戻る</button>
+    <div class="err" id="e2" style="display:none"></div>
+  </div>
+
+  <!-- SCREEN 3 -->
+  <div class="screen" id="sc3">
+    <div id="loadView" class="lw">
+      <div class="sp"></div>
+      <div class="lt">採点中です…</div>
+      <div class="lt2">解答書と回答を照合しています</div>
+    </div>
+    <div id="resultView" style="display:none">
+      <div class="result-wrap" id="resultContent"></div>
+      <button class="btn btn-p" id="nextBtn">次の問題を採点する</button>
+      <button class="btn btn-g" id="resetBtn">最初からやり直す</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let ansB64=null, ansMime=null, stuB64=null;
+
+function setStep(n){
+  for(let i=1;i<=3;i++){
+    const s=document.getElementById('st'+i);
+    s.className='step'+(i===n?' on':i<n?' done':'');
+    document.getElementById('sc'+i).className='screen'+(i===n?' on':'');
+  }
+}
+
+// Answer file
+document.getElementById('ansFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  ansMime=f.type;ansB64=await toB64(f);
+  if(f.type.startsWith('image/')){const p=document.getElementById('ansPrev');p.src='data:'+f.type+';base64,'+ansB64;p.style.display='block';}
+  document.getElementById('ansZone').classList.add('ok');
+  document.getElementById('toSc2').disabled=false;
+});
+
+document.getElementById('toSc2').addEventListener('click',()=>setStep(2));
+document.getElementById('backBtn').addEventListener('click',()=>setStep(1));
+
+// Student file
+document.getElementById('stuFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  stuB64=await toB64(f);
+  const p=document.getElementById('stuPrev');p.src='data:'+f.type+';base64,'+stuB64;p.style.display='block';
+  document.getElementById('stuZone').classList.add('ok');
+});
+
+// GRADE
+document.getElementById('gradeBtn').addEventListener('click',async()=>{
+  const txt=document.getElementById('stuTxt').value.trim();
+  if(!stuB64&&!txt){showErr('e2','生徒の回答（写真またはテキスト）を入力してください。');return;}
+  document.getElementById('e2').style.display='none';
+  setStep(3);
+  document.getElementById('loadView').style.display='block';
+  document.getElementById('resultView').style.display='none';
+
+  const qInfo=document.getElementById('qInfo').value.trim();
+
+  try{
+    const content=[];
+
+    if(ansB64){
+      if(ansMime==='application/pdf') content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:ansB64}});
+      else content.push({type:'image',source:{type:'base64',media_type:ansMime,data:ansB64}});
+    }
+    if(stuB64) content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:stuB64}});
+
+    const prompt=`あなたは公文式教室の国語担当の先生（採点アシスタント）です。
+生徒に寄り添った、温かく丁寧な文体で採点結果を返してください。
+
+【採点基準】
+(1) 誤りのあった場合は設問ごとに点引き（丸数字①②③単位）
+(2) 誤字・脱字は1点引き
+(3) 読解問題は一解答例。表現が違っても要点が合っていれば正解。文型指定がある場合はそれに従う
+(4) ——線付き語句は直後の（　）内と交換可能
+(5) ——線なしの（　）内は許容範囲。（別）は別解、※は採点上の留意点
+(6) 送りがなは一般的なものでよい（設問指示優先）
+
+${ansB64?'最初の画像が【解答書】です。':''}
+${stuB64?'次の画像が【生徒の回答用紙】です。':''}
+${txt?'生徒の回答テキスト：\n'+txt:''}
+${qInfo?'対象の問題：'+qInfo:''}
+
+以下のJSON形式のみで返してください（マークダウン・コードブロック不要）：
+{
+  "title": "採点対象のタイトル（例：O151〜156 漢文の思想）",
+  "score": "正解数/全問数（例：8/10）",
+  "grade": "great（8割以上）またはgood（6〜8割）またはtry（6割未満）",
+  "greeting": "生徒への冒頭メッセージ（2〜3文、名前は「生徒さん」）",
+  "questions": [
+    {
+      "num": "問一",
+      "verdict": "correct（正解）またはincorrect（不正解）またはpartial（部分点）",
+      "label": "正解！ または おしい！ または △（さんかく） など",
+      "comment": "採点コメント（採点基準に基づき、不正解の場合は正解も示す。温かい文体で）"
+    }
+  ],
+  "summary": "全体総評（2〜3文、頑張りを認めながら次へのアドバイスを含む）",
+  "next_advice": "次に意識してほしいこと（1〜2点、具体的に）"
+}`;
+
+    content.push({type:'text',text:prompt});
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content}]})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const raw=data.content.map(x=>x.text||'').join('').replace(/```json|```/g,'').trim();
+    const r=JSON.parse(raw);
+    renderResult(r);
+  }catch(e){
+    document.getElementById('resultContent').innerHTML='<div class="err">エラーが発生しました。もう一度お試しください。<br><small>'+esc(e.message)+'</small></div>';
+    document.getElementById('loadView').style.display='none';
+    document.getElementById('resultView').style.display='block';
+  }
+});
+
+function renderResult(r){
+  const markMap={great:'💮',good:'⭐',try:'💪'};
+  const mark=markMap[r.grade]||'📋';
+
+  let html=`<div class="score-banner ${r.grade||'good'}">
+    <div class="score-num">${esc(r.score||'—')}</div>
+    <div class="score-label">${esc(r.title||'採点結果')}</div>
+    <div class="score-mark">${mark}</div>
+  </div>`;
+
+  // Greeting
+  if(r.greeting){
+    html+=`<div class="section-card" style="margin-bottom:12px">
+      <div class="section-head">💬 先生から</div>
+      <div class="section-body">${esc(r.greeting)}</div>
+    </div>`;
+  }
+
+  // Questions
+  if(r.questions&&r.questions.length){
+    html+=`<div class="section-card">
+      <div class="section-head">📋 採点結果まとめ</div>`;
+    r.questions.forEach(q=>{
+      const cls=q.verdict==='correct'?'c':q.verdict==='incorrect'?'x':'d';
+      const ic=q.verdict==='correct'?'⭕':q.verdict==='incorrect'?'❌':'△';
+      html+=`<div class="q-item">
+        <div class="q-mark">${ic}</div>
+        <div class="q-content">
+          <div class="q-num">${esc(q.num||'')}</div>
+          <div class="q-verdict ${cls}">${esc(q.label||'')}</div>
+          <div class="q-comment">${esc(q.comment||'')}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Summary + advice
+  if(r.summary||r.next_advice){
+    html+=`<div class="advice-card">
+      <div class="advice-head">💡 先生からのアドバイス</div>
+      <div class="advice-body">`;
+    if(r.summary) html+=esc(r.summary);
+    if(r.next_advice) html+='\n\n<b>次はここを意識してみて！</b>\n'+esc(r.next_advice);
+    html+=`</div></div>`;
+  }
+
+  document.getElementById('resultContent').innerHTML=html;
+  document.getElementById('loadView').style.display='none';
+  document.getElementById('resultView').style.display='block';
+}
+
+document.getElementById('nextBtn').addEventListener('click',()=>{
+  stuB64=null;
+  document.getElementById('stuFile').value='';
+  document.getElementById('stuPrev').style.display='none';
+  document.getElementById('stuTxt').value='';
+  document.getElementById('stuZone').classList.remove('ok');
+  setStep(2);
+});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  ansB64=null;ansMime=null;stuB64=null;
+  ['ansFile','stuFile'].forEach(id=>document.getElementById(id).value='');
+  ['ansPrev','stuPrev'].forEach(id=>document.getElementById(id).style.display='none');
+  ['ansZone','stuZone'].forEach(id=>document.getElementById(id).classList.remove('ok'));
+  document.getElementById('stuTxt').value='';
+  document.getElementById('qInfo').value='';
+  document.getElementById('toSc2').disabled=true;
+  setStep(1);
+});
+
+function toB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+</script>
+</body>
+</html>
